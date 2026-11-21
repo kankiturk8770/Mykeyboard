@@ -50,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -193,7 +195,13 @@ private fun Home(vm: SettingsViewModel, s: KbSettings, actions: SettingsActions,
         }
     }
     var trial by remember { mutableStateOf("") }
-    OutlinedTextField(trial, { trial = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+    if (BuildConfig.DEBUG) LaunchedEffect(trial) { android.util.Log.d("KbTrial", "text=" + trial.replace("\n", "\\n")) }
+    OutlinedTextField(trial, { trial = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).then(
+        if (BuildConfig.DEBUG) Modifier.onGloballyPositioned { c ->
+            // فقط دیباگ، برای تست خودکار روی شبیه‌ساز: جای فیلد امتحان
+            val r = c.boundsInWindow()
+            android.util.Log.d("KbTrial", "field=${r.center.x.toInt()}|${r.center.y.toInt()}")
+        } else Modifier),
         placeholder = { Text(t("این‌جا امتحانش کن…", "Try it here…"), color = G.sub) }, colors = fieldColors(), minLines = 2)
     PAGES.forEach { p ->
         Row(

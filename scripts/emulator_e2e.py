@@ -41,36 +41,15 @@ def shot(name):
         f.write(subprocess.run(ADB + ["exec-out", "screencap", "-p"], capture_output=True, timeout=120).stdout)
 
 
-def dump():
-    for _ in range(5):
-        sh("uiautomator", "dump", "/sdcard/ui.xml", timeout=180)
-        x = sh("cat", "/sdcard/ui.xml")
-        if x.strip().startswith("<?xml"):
-            return ET.fromstring(x[x.index("<hierarchy"):])
-        time.sleep(2)
-    raise RuntimeError("uiautomator dump failed")
+def trial_log():
+    return adb("logcat", "-d", "-v", "raw", "-s", "KbTrial:D").splitlines()
 
 
-def center(node):
-    a, b, c, d = map(int, re.findall(r"\d+", node.get("bounds")))
-    return (a + c) // 2, (b + d) // 2
-
-
-def find(root, pred):
-    for n in root.iter("node"):
-        if pred(n):
-            return n
-    return None
-
-
-def field_text():
-    root = dump()
-    n = find(root, lambda n: n.get("class") == "android.widget.EditText")
-    if n is None:
-        return None
-    t = n.get("text") or ""
-    hint = n.get("hint") or ""
-    return "" if t == hint and "Try it" in t or t.startswith("Try it") or t.startswith("این‌جا") else t
+def field_text(wait=1.2):
+    """متن فیلد امتحان (نسخه‌ی دیباگ هر تغییرش را در logcat می‌نویسد)."""
+    time.sleep(wait)
+    lines = [l for l in trial_log() if l.startswith("text=")]
+    return lines[-1][5:].replace("\\n", "\n") if lines else None
 
 
 def tap(x, y, wait=0.6):
@@ -136,7 +115,7 @@ def type_text(s, t, c):
             tap(*t[ch], wait=0.35)
 
 
-def clear_field(c):
+def _unused_clear_field(c):
     # Ctrl+A و پاک‌کن از نوار ترمینال
     b = bar()
     tap(*b[("icon", "terminal")])
@@ -151,10 +130,15 @@ def clear_field(c):
 
 def open_field():
     sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
-    time.sleep(3)
-    root = dump()
-    n = find(root, lambda n: n.get("class") == "android.widget.EditText")
-    tap(*center(n), wait=3)
+    for _ in range(60):
+        f = [l for l in trial_log() if l.startswith("field=")]
+        if f:
+            x, y = map(int, f[-1][6:].split("|"))
+            # boundsInWindow + نوار وضعیت (برنامه لبه‌به‌لبه است، پس پنجره از ۰ شروع می‌شود)
+            tap(x, y, wait=4)
+            return
+        time.sleep(2)
+    raise RuntimeError("trial field never laid out")
 
 
 def main():
