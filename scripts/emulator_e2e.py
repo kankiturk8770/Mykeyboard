@@ -115,19 +115,6 @@ def type_text(s, t, c):
             tap(*t[ch], wait=0.35)
 
 
-def _unused_clear_field(c):
-    # Ctrl+A و پاک‌کن از نوار ترمینال
-    b = bar()
-    tap(*b[("icon", "terminal")])
-    tap(*b[("term", "ctrl")])
-    _, t, c2 = keys()
-    tap(*t.get("a", t.get("ش")))
-    tap(*c2[-5])
-    tap(*b[("term", "ctrl")], wait=0.2)  # اگر روشن مانده بود
-    tap(*b[("term", "ctrl")], wait=0.2)
-    tap(40, b[("icon", "terminal")][1])  # برگشت
-
-
 def open_field():
     sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
     for _ in range(60):
@@ -145,6 +132,7 @@ def main():
     print(adb("install", "-r", "-g", APK, timeout=600).strip())
     sh("ime", "enable", IME)
     sh("ime", "set", IME)
+    time.sleep(5)
     sh("settings", "put", "secure", "show_ime_with_hard_keyboard", "1")
     adb("logcat", "-c")
     open_field()
