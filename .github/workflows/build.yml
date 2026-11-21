@@ -28,11 +28,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
 
-      - name: کلید امضا (اگر در Secrets هست)
+      - name: کلید امضا (اگر در Secrets هست) و بررسی درستی آن
         env:
           KEYBOARD_KEYSTORE: ${{ secrets.KEYBOARD_KEYSTORE }}
+          KEYBOARD_KEY_PASS: ${{ secrets.KEYBOARD_KEY_PASS }}
         run: |
-          if [ -n "$KEYBOARD_KEYSTORE" ]; then echo "$KEYBOARD_KEYSTORE" | base64 -d > app/kanki-keyboard.jks; fi
+          if [ -z "$KEYBOARD_KEYSTORE" ]; then echo "کلید امضا در Secrets نیست؛ با کلید دیباگ ساخته می‌شود و منتشر نمی‌شود."; exit 0; fi
+          if ! echo "$KEYBOARD_KEYSTORE" | tr -d ' \r\n' | base64 -d > app/kanki-keyboard.jks 2>/dev/null; then
+            echo "::error::KEYBOARD_KEYSTORE درست نیست: باید فقط محتوای فایل 2-KEYBOARD_KEYSTORE.txt باشد."; exit 1
+          fi
+          if ! keytool -list -keystore app/kanki-keyboard.jks -storepass "$KEYBOARD_KEY_PASS" -alias kanki >/dev/null 2>&1; then
+            echo "::error::KEYBOARD_KEY_PASS با کلید جور نیست: باید فقط محتوای فایل 1-KEYBOARD_KEY_PASS.txt باشد."; exit 1
+          fi
+          echo "کلید امضا درست است."
 
       - name: تست‌ها (منطق، Room، چیدمان و عکس کیبورد)
         run: ./gradlew --no-daemon :app:testDebugUnitTest
