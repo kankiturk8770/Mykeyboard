@@ -135,9 +135,14 @@ def open_field():
 
 def main():
     print(adb("install", "-r", "-g", APK, timeout=600).strip())
-    sh("ime", "enable", IME)
-    sh("ime", "set", IME)
-    time.sleep(5)
+    for _ in range(10):
+        print("ime enable:", sh("ime", "enable", IME).strip())
+        print("ime set:", sh("ime", "set", IME).strip())
+        if IME.split("/")[0] in sh("settings", "get", "secure", "default_input_method"):
+            break
+        print(sh("ime", "list", "-a", "-s"))
+        time.sleep(5)
+    time.sleep(3)
     sh("settings", "put", "secure", "show_ime_with_hard_keyboard", "1")
     adb("logcat", "-c")
     open_field()
