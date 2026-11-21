@@ -50,6 +50,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -202,7 +204,8 @@ private fun Home(vm: SettingsViewModel, s: KbSettings, actions: SettingsActions,
             val r = c.boundsInWindow()
             android.util.Log.d("KbTrial", "field=${r.center.x.toInt()}|${r.center.y.toInt()}")
         } else Modifier),
-        placeholder = { Text(t("این‌جا امتحانش کن…", "Try it here…"), color = G.sub) }, colors = fieldColors(), minLines = 2)
+        placeholder = { Text(t("این‌جا امتحانش کن…", "Try it here…"), color = G.sub) }, colors = fieldColors(), minLines = 2,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences))
     PAGES.forEach { p ->
         Row(
             Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(16.dp)).background(G.glass)

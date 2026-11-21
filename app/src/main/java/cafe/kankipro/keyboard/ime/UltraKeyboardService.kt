@@ -111,6 +111,8 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
     private var selEnd = -1
     private var lastSpaceAt = 0L
     private var undoCorrection: Triple<String, String, String>? = null // اصل، تصحیح، جداکننده
+    /** کلمه‌ای که کاربر تصحیحش را برگرداند؛ دوباره تصحیح نمی‌شود. */
+    private var keepAsTyped: String? = null
     private var liveStyle: String? = null
     private var lastReplaced: String? = null
     private var sourceWasSelection = false
@@ -453,7 +455,8 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
         undoCorrection = null
         if (composing.isNotEmpty()) {
             val word = composing.toString()
-            val fixed = if (st.autocorrect && !privateField && liveStyle == null && sep in AUTOCORRECT_ON) app.suggestions.autocorrect(word, curLang) else null
+            val fixed = if (st.autocorrect && !privateField && liveStyle == null && sep in AUTOCORRECT_ON && word != keepAsTyped) app.suggestions.autocorrect(word, curLang) else null
+            keepAsTyped = null
             val final = fixed ?: word
             c.commitText(final, 1)
             if (fixed != null && fixed != word) undoCorrection = Triple(word, fixed, sep)
@@ -507,6 +510,7 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
                 c.beginBatchEdit()
                 c.deleteSurroundingText(fixed.length + sep.length, 0)
                 composing.setLength(0); composing.append(orig)
+                keepAsTyped = orig
                 c.setComposingText(composing, 1)
                 c.endBatchEdit()
                 updateSuggestions()

@@ -124,7 +124,8 @@ class TopBarView(context: Context) : View(context) {
             getLocationOnScreen(loc)
             val (start, slot) = iconSlots(width.toFloat())
             val sb = StringBuilder("bar")
-            icons.forEachIndexed { i, ic -> sb.append("\nicon|").append(ic.id).append('|').append((loc[0] + start + slot * i + slot / 2).toInt()).append('|').append(loc[1] + height / 2) }
+            sb.append("\nicon|terminal|").append((loc[0] + lead() + leadW / 2).toInt()).append('|').append(loc[1] + height / 2)
+            others.forEachIndexed { i, ic -> sb.append("\nicon|").append(ic.id).append('|').append((loc[0] + start + slot * i + slot / 2).toInt()).append('|').append(loc[1] + height / 2) }
             var x = 40 * dp + 4 * dp
             for ((id, label) in termKeys) { val kw = termKeyWidth(label); sb.append("\nterm|").append(id).append('|').append((loc[0] + x + kw / 2).toInt()).append('|').append(loc[1] + height / 2); x += kw + 6 * dp }
             android.util.Log.d("KbBar", sb.toString())
@@ -169,23 +170,38 @@ class TopBarView(context: Context) : View(context) {
         drawCentered(c, "$n ✕", r.centerX(), r.centerY(), cw)
     }
 
+    /** شروع بخش بعد از چیپ فونت زنده. */
+    private fun lead() = if (liveStyleName != null) liveChipWidth() + 10 * dp else 0f
+    private val leadW get() = 46 * dp
+    /** دکمه‌ی ترمینال همیشه اول و همان‌جا (هم کنار آیکن‌ها، هم کنار پیشنهادها)؛ بقیه‌ی آیکن‌ها در باقی عرض. */
+    private val others get() = icons.filter { it.id != "terminal" }
+
     private fun iconSlots(w: Float): Pair<Float, Float> {
-        val start = if (liveStyleName != null) liveChipWidth() + 10 * dp else 0f
-        return start to (w - start) / icons.size
+        val start = lead() + leadW
+        return start to (w - start) / others.size
+    }
+
+    private fun drawLead(c: Canvas, h: Float) {
+        val t = theme
+        val cx = lead() + leadW / 2
+        if (rawMode) { fill.color = KeyboardTheme.withAlpha(t.accentB, 0x40); c.drawCircle(cx, h / 2, 17 * dp, fill) }
+        val s = (22 * dp).toInt()
+        val d = drawable(R.drawable.ic_terminal)
+        d.setTint(t.text)
+        d.setBounds((cx - s / 2).toInt(), (h / 2 - s / 2).toInt(), (cx + s / 2).toInt(), (h / 2 + s / 2).toInt())
+        d.draw(c)
+        stroke.color = KeyboardTheme.withAlpha(t.text, 0x22); stroke.strokeWidth = dp
+        c.drawLine(lead() + leadW, h * 0.28f, lead() + leadW, h * 0.72f, stroke)
     }
 
     private fun drawIcons(c: Canvas, w: Float, h: Float) {
         val t = theme
         drawLiveChip(c, h)
+        drawLead(c, h)
         val (start, slot) = iconSlots(w)
         val s = (22 * dp).toInt()
-        icons.forEachIndexed { i, ic ->
+        others.forEachIndexed { i, ic ->
             val cx = start + slot * i + slot / 2
-            val active = (ic.id == "terminal" && rawMode)
-            if (active) {
-                fill.color = KeyboardTheme.withAlpha(t.accentB, 0x40)
-                c.drawCircle(cx, h / 2, 17 * dp, fill)
-            }
             val d = drawable(ic.res)
             d.setTint(if (ic.id == "mic") t.accentB else t.text)
             d.setBounds((cx - s / 2).toInt(), (h / 2 - s / 2).toInt(), (cx + s / 2).toInt(), (h / 2 + s / 2).toInt())
@@ -195,10 +211,11 @@ class TopBarView(context: Context) : View(context) {
 
     private fun drawSuggestions(c: Canvas, w: Float, h: Float) {
         val t = theme
-        drawLiveChip(c, h)
-        val start = if (liveStyleName != null) liveChipWidth() + 10 * dp else 0f
         val list = suggestions.take(3)
         if (list.isEmpty()) { drawIcons(c, w, h); return }
+        drawLiveChip(c, h)
+        drawLead(c, h)
+        val start = lead() + leadW
         val order = slotOrder(list.size)
         val slot = (w - start) / 3f
         for ((i, idx) in order.withIndex()) {
@@ -401,12 +418,13 @@ class TopBarView(context: Context) : View(context) {
         if (liveStyleName != null && (mode == Mode.ICONS || mode == Mode.SUGGESTIONS) && x < liveChipWidth() + 10 * dp) {
             listener?.onLiveStyleOff(); return
         }
+        if ((mode == Mode.ICONS || mode == Mode.SUGGESTIONS) && x >= lead() && x < lead() + leadW) { listener?.onIcon("terminal"); return }
         when (mode) {
             Mode.ICONS -> iconTap(x, w)
             Mode.SUGGESTIONS -> {
                 val list = suggestions.take(3)
                 if (list.isEmpty()) { iconTap(x, w); return }
-                val start = if (liveStyleName != null) liveChipWidth() + 10 * dp else 0f
+                val start = lead() + leadW
                 val i = ((x - start) / ((w - start) / 3f)).toInt().coerceIn(0, 2)
                 val order = slotOrder(list.size)
                 val idx = order.getOrNull(i) ?: return
@@ -423,6 +441,6 @@ class TopBarView(context: Context) : View(context) {
     private fun iconTap(x: Float, w: Float) {
         val (start, slot) = iconSlots(w)
         val i = ((x - start) / slot).toInt()
-        icons.getOrNull(i)?.let { listener?.onIcon(it.id) }
+        if (x >= start) others.getOrNull(i)?.let { listener?.onIcon(it.id) }
     }
 }

@@ -110,14 +110,17 @@ def wait_layout(want, tries=40):
     raise RuntimeError("layout %s never showed (last %s)" % (want, keys()[0]))
 
 
-def type_text(s, t, c):
+def type_text(s, t=None, c=None):
+    """هر حرف با چیدمان همان لحظه (بعد از حرف بزرگ خودکار، چیدمان عوض می‌شود)."""
     for ch in s:
+        _, t, c = keys()
         if ch == " ":
-            tap(*c[32], wait=0.35)
-        else:
-            if ch not in t:
-                raise RuntimeError("no key for %r" % ch)
-            tap(*t[ch], wait=0.35)
+            tap(*c[32], wait=0.4)
+            continue
+        key = t.get(ch) or t.get(ch.lower()) or t.get(ch.upper())
+        if key is None:
+            raise RuntimeError("no key for %r" % ch)
+        tap(*key, wait=0.4)
 
 
 def open_field():
@@ -201,13 +204,14 @@ def main():
     tap(*c[32])
 
     # ۷) دو فاصله = نقطه و حرف بزرگ بعدش
-    type_text("ok", t, c)
+    type_text("ok")
     tap(*c[32], wait=0.15)
-    tap(*c[32], wait=0.8)
+    tap(*c[32], wait=1.2)
     _, t, c = keys()
-    type_text("Go", {**t, "G": t.get("G", t.get("g"))}, c)
+    check("auto caps after a sentence", "G" in t, sorted(t)[:5])
+    type_text("Go")
     v = field_text()
-    check("double-space period + auto caps", v is not None and v.endswith("ok. Go"), v)
+    check("double-space period + auto caps", v is not None and v.endswith("teh ok. Go"), v)
 
     # ۸) حرکت نشانگر با کشیدن روی فاصله
     x, y = c[32]
@@ -215,7 +219,10 @@ def main():
     _, t, c = keys()
     tap(*t.get("x", t.get("X")))
     v = field_text()
-    check("space trackpad moves cursor", v is not None and v.endswith("ok. Gxo") or v.endswith("ok. GXo"), v)
+    check("space trackpad moves cursor", v is not None and v.endswith("ok. Gxo"), v)
+    # کلمه‌ی در حال تایپ را تمام کن تا نوار بالا آیکن‌ها را نشان دهد
+    _, t, c = keys()
+    tap(*c[32])
 
     # ۹) حالت خام (ترمینال) با کلید RAW و CTRL+A
     b = bar()
@@ -226,7 +233,7 @@ def main():
     _, t, c = keys()
     type_text("ls", t, c)
     v = field_text()
-    check("raw mode types directly", v is not None and v.endswith("ls") or (v and "ls" in v), v)
+    check("raw mode types directly", v is not None and "ls" in v, v)
     tap(*b[("term", "ctrl")])
     tap(*t["a"])
     tap(*c[-5])  # پاک‌کن با KeyEvent واقعی روی متن انتخاب‌شده
@@ -260,7 +267,7 @@ def main():
         # برگشت: دکمه‌ی کیبورد پایین چپ پنل
         _, _, c = keys()
         root_h = int(sh("wm", "size").split()[-1].split("x")[1])
-        tap(60, root_h - 40 - 60, wait=1.5)
+        tap(110, root_h - 200, wait=1.5)
     crash = adb("logcat", "-d", "-s", "AndroidRuntime:E")
     check("no crash in the whole run", "FATAL" not in crash, crash[-2000:])
     shot("05_end")

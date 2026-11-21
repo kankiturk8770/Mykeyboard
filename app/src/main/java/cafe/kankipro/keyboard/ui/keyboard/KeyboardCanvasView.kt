@@ -440,6 +440,11 @@ class KeyboardCanvasView(context: Context) : View(context) {
         var mode = Mode.NORMAL
         var popupItems: List<String> = emptyList()
         var popupSel = 0
+        var popupMoved = false
+        var popupX = 0f
+        var popupY = 0f
+        var lastX = downX
+        var lastY = downY
         var popupCols = 1
         var popupCellH = 0f
         val popupRect = RectF()
@@ -539,15 +544,25 @@ class KeyboardCanvasView(context: Context) : View(context) {
         clampX(p.popupRect)
         clampTop(p.popupRect)
         p.popupSel = 0
+        p.popupMoved = false
+        p.popupX = p.lastX
+        p.popupY = p.lastY
         listener?.onKeyDown(k)
         invalidate()
     }
 
     private fun move(id: Int, x: Float, y: Float) {
         val p = ptrs.get(id) ?: return
+        p.lastX = x
+        p.lastY = y
         val b = p.box
         when (p.mode) {
             Mode.POPUP -> {
+                // تا انگشت واقعاً حرکت نکرده، اولین گزینه (نزدیک‌ترین به معنی کلید) می‌ماند
+                if (!p.popupMoved) {
+                    if (abs(x - p.popupX) < 10 * dp && abs(y - p.popupY) < 10 * dp) return
+                    p.popupMoved = true
+                }
                 val cols = p.popupCols
                 val cw = p.popupRect.width() / cols
                 val col = ((x - p.popupRect.left) / cw).toInt().coerceIn(0, cols - 1)
