@@ -404,7 +404,18 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
         undoCorrection = null
         if (sender.hasModifier) {
             finishComposing()
-            sender.text(out)
+            // در برنامه‌های معمولی Ctrl+A/C/X/V/Z از راه خود ویرایشگر (هر فیلدی، حتی Compose)؛ در ترمینال KeyEvent واقعی
+            val action = if (mode == InputMode.RICH && sender.ctrl > 0 && sender.alt == 0) when (out.lowercase()) {
+                "a" -> android.R.id.selectAll
+                "c" -> android.R.id.copy
+                "x" -> android.R.id.cut
+                "v" -> android.R.id.paste
+                else -> 0
+            } else 0
+            if (action != 0 && c.performContextMenuAction(action)) {
+                if (sender.ctrl == 1) sender.ctrl = 0
+                if (action == android.R.id.copy || action == android.R.id.cut) captureClip()
+            } else sender.text(out)
             syncModifiers()
             return
         }
