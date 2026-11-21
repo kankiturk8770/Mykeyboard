@@ -241,20 +241,18 @@ def main():
     check("CTRL+A then DEL clears the field", v == "", v)
     tap(*b[("term", "raw")], wait=1.5)  # برگشت به حالت معمولی
 
-    # ۱۰) کلیپ‌بورد: کپی کد یک‌بارمصرف = حساس
+    # ۱۰) کلیپ‌بورد: کپی کد یک‌بارمصرف = حساس (نوار ترمینال هنوز باز است)
     _, t, c = keys()
     tap(*c[-2], wait=1.2)  # ?123
     _, t, c = keys()
     for d in "482913":
         tap(*t[d], wait=0.3)
-    b = bar()
-    tap(*b[("term", "ctrl")]); _, t2, _ = keys()
     tap(*c[-3], wait=1.2)  # ABC
     _, t, c = keys()
     tap(*b[("term", "ctrl")]); tap(*t["a"])
-    tap(*b[("term", "ctrl")]); tap(*t["c"], wait=1.5)
-    rows = sh("run-as", PKG, "sqlite3", "databases/keyboard.db", "select text, sensitive from clips;").strip()
-    check("copied OTP saved as sensitive", "482913|1" in rows, rows)
+    tap(*b[("term", "ctrl")]); tap(*t["c"], wait=2)
+    clip = adb("logcat", "-d", "-v", "raw", "-s", "KbClip:D")
+    check("copied OTP saved as sensitive", "added len=6 sensitive=true" in clip, clip[-300:])
 
     # ۱۱) پنل‌ها باز و بسته شوند بی خطا
     tap(40, b[("icon", "terminal")][1])

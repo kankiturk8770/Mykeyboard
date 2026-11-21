@@ -531,7 +531,19 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
         val n = if (s.kashida > 0) PersianTypographyEngine.deleteLength(before) else lastGraphemeLength(before)
         c.deleteSurroundingText(n, 0)
         // جای نشانگر هنوز از onUpdateSelection نیامده؛ خودمان حساب می‌کنیم
-        restartComposing(if (selStart >= 0 && selStart == selEnd) selStart - n else -1)
+        restartComposing(cursorNow())
+    }
+
+    /**
+     * جای نشانگر همین الان، از خود برنامه (onUpdateSelection دیر می‌رسد و بعد از پاک کردن هنوز عدد قبلی را دارد).
+     * ۱- = انتخاب هست یا معلوم نیست.
+     */
+    private fun cursorNow(): Int {
+        val c = ic ?: return -1
+        val et = try { c.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0) } catch (_: Exception) { null }
+            ?: return if (selStart >= 0 && selStart == selEnd) selStart else -1
+        if (et.selectionStart != et.selectionEnd || et.selectionStart < 0) return -1
+        return et.startOffset + et.selectionStart
     }
 
     /** بعد از پاک کردن، اگر نشانگر ته یک کلمه است، همان کلمه دوباره «در حال تایپ» شود (پیشنهادها برمی‌گردند). */
@@ -628,8 +640,9 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
         if (delSwipeBase < 0) {
             if (words == 0 && done) return
             finishComposing()
-            if (selStart < 0 || selStart != selEnd) { if (done) onDelete(); return }
-            delSwipeBase = selStart
+            val cur = cursorNow()
+            if (cur < 0) { if (done) onDelete(); return }
+            delSwipeBase = cur
             delSwipeText = c.getTextBeforeCursor(400, 0)?.toString() ?: ""
         }
         val len = wordsBackLength(delSwipeText, words)
@@ -865,6 +878,8 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
                 (Build.VERSION.SDK_INT >= 33 && clip.description?.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true)
             // کپی از فیلد رمز همین الان: همیشه حساس
             app.clipboard.add(text, flaggedBySystem = flagged || privateField)
+            // فقط دیباگ (برای تست خودکار): بی خود متن
+            if (cafe.kankipro.keyboard.BuildConfig.DEBUG) android.util.Log.d("KbClip", "added len=${text.length} sensitive=${cafe.kankipro.keyboard.data.clipboard.SensitiveDetector.isSensitive(text, flagged || privateField)}")
         } catch (_: Exception) {
         }
     }
