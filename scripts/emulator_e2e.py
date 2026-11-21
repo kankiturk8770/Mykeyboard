@@ -96,8 +96,13 @@ def bar():
     return out
 
 
-def wait_layout(want, tries=20):
-    for _ in range(tries):
+def wait_layout(want, tries=40):
+    for i in range(tries):
+        if i == 15 and not keys()[0]:
+            # کیبورد هنوز نیامده: دوباره فیلد را لمس کن
+            f = [l for l in trial_log() if l.startswith("field=")]
+            if f:
+                tap(*map(int, f[-1][6:].split("|")), wait=3)
         layout, t, c = keys()
         if layout and layout.startswith(want):
             return t, c
@@ -253,5 +258,18 @@ def main():
     return 0 if ok == len(results) else 1
 
 
+def diagnose():
+    print("---- default IME:", sh("settings", "get", "secure", "default_input_method").strip())
+    print("---- enabled IMEs:", sh("settings", "get", "secure", "enabled_input_methods").strip())
+    print("\n".join(l for l in sh("dumpsys", "input_method").splitlines() if any(k in l for k in ("mCurId", "mInputShown", "mCurMethodId", "mServedView"))))
+    print("---- errors:\n" + adb("logcat", "-d", "*:E")[-6000:])
+    print("---- keyboard logs:\n" + adb("logcat", "-d", "-s", "KbKeys:D", "KbBar:D", "KbTrial:D", "InputMethodManagerService:*")[-3000:])
+    shot("99_failure")
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        diagnose()
+        raise
