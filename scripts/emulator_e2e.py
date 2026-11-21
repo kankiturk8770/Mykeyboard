@@ -123,8 +123,6 @@ def type_text(s, t, c):
 def open_field():
     sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
     time.sleep(5)
-    adb("logcat", "-c")
-    sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
     for _ in range(60):
         f = [l for l in trial_log() if l.startswith("field=")]
         if f:
