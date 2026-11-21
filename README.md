@@ -15,7 +15,8 @@
 - بکاپ و بازگردانی همه‌چیز با یک فایل JSON.
 
 ## نصب
-1. فایل APK مناسب گوشی را از Actions (artifact) بگیر: اکثر گوشی‌ها `arm64-v8a`.
+1. آخرین نسخه (بیشتر گوشی‌ها): https://github.com/kankiturk8770/Mykeyboard/releases/latest/download/kanki-keyboard-arm64-v8a.apk
+   گوشی قدیمی: https://github.com/kankiturk8770/Mykeyboard/releases/latest/download/kanki-keyboard-armeabi-v7a.apk
 2. برنامه را باز کن و دو قدم «راه‌اندازی» را بزن.
 
 ## حریم خصوصی

@@ -10,6 +10,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # نوشتن فقط برای ساختن Release روی main
+    permissions:
+      contents: write
+    env:
+      HAS_KEY: ${{ secrets.KEYBOARD_KEYSTORE != '' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -43,6 +48,21 @@ jobs:
             s=$(stat -c %s "$f"); echo "$f: $s bytes"
             if [ "$s" -gt 15728640 ]; then echo "too large: $f"; exit 1; fi
           done
+
+      # فقط main و فقط با کلید امضای ثابت: فایل نصبی در Releases با آدرس ثابت «آخرین نسخه»
+      - name: انتشار در Releases
+        if: github.ref == 'refs/heads/main' && env.HAS_KEY == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          V=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-arm64-v8a-release.apk out/kanki-keyboard-arm64-v8a.apk
+          cp app/build/outputs/apk/release/app-armeabi-v7a-release.apk out/kanki-keyboard-armeabi-v7a.apk
+          TAG="v$V-${{ github.run_number }}"
+          gh release create "$TAG" out/*.apk --target "${{ github.sha }}" --title "کیبورد کانکی $V" --latest \
+            --notes "arm64-v8a برای بیشتر گوشی‌ها؛ armeabi-v7a برای گوشی‌های قدیمی."
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
