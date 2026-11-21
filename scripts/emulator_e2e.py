@@ -122,6 +122,9 @@ def type_text(s, t, c):
 
 def open_field():
     sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
+    time.sleep(5)
+    adb("logcat", "-c")
+    sh("am", "start", "-W", "-n", PKG + "/.ui.settings.SettingsActivity")
     for _ in range(60):
         f = [l for l in trial_log() if l.startswith("field=")]
         if f:
@@ -134,6 +137,12 @@ def open_field():
 
 
 def main():
+    # شبیه‌سازِ تازه‌بالاآمده پنجره‌ی «پاسخ نمی‌دهد» نشان می‌دهد که لمس‌ها را می‌گیرد
+    sh("settings", "put", "global", "hide_error_dialogs", "1")
+    sh("settings", "put", "secure", "anr_show_background", "0")
+    time.sleep(45)
+    sh("am", "broadcast", "-a", "android.intent.action.CLOSE_SYSTEM_DIALOGS")
+    sh("input", "keyevent", "KEYCODE_HOME")
     print(adb("install", "-r", "-g", APK, timeout=600).strip())
     for _ in range(10):
         print("ime enable:", sh("ime", "enable", IME).strip())
