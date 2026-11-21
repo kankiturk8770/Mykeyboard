@@ -89,6 +89,7 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
     private lateinit var voice: OfflineVoiceEngine
 
     private var keyboard: KeyboardCanvasView? = null
+    private var rootView: View? = null
     private var topBar: TopBarView? = null
     private var panelView: ComposeView? = null
     private val panelState = mutableStateOf(Panel.NONE)
@@ -170,6 +171,17 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
             clipChildren = false
             clipToPadding = false
         }
+        // اندروید ۱۵: پنجره‌ی کیبورد زیر نوار ناوبری (دکمه‌های خانه/برگشت یا خط اشاره) کشیده می‌شود؛
+        // پایین (و کنارها در حالت افقی) به اندازه‌ی همان نوار فاصله می‌گیرد و رنگ زمینه‌ی کیبورد زیرش می‌ماند.
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val nav = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.navigationBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout(),
+            )
+            v.setPadding(nav.left, 0, nav.right, nav.bottom)
+            if (cafe.kankipro.keyboard.BuildConfig.DEBUG) android.util.Log.d("KbInsets", "navPad=${nav.bottom}")
+            insets
+        }
+        rootView = root
         root.setViewTreeLifecycleOwner(this)
         root.setViewTreeSavedStateRegistryOwner(this)
         root.setViewTreeViewModelStoreOwner(this)
@@ -201,7 +213,9 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
 
     private fun applySettings(st: KbSettings) {
         L.mode = st.uiLang
-        val theme = KeyboardTheme.from(st)
+        // شفافیت فقط وقتی بلور واقعاً روشن است؛ وگرنه برنامه‌ی پشت (مثلاً سفید) از زیر کیبورد پیدا و رنگ‌ها کدر می‌شوند
+        val theme = KeyboardTheme.from(if (blurActive(st)) st else st.copy(glassAlpha = 100))
+        rootView?.background = ColorDrawable(theme.bgBottom)
         panelColors.value = PanelColors.from(theme)
         if (st.currentLang != lang && st.currentLang in st.languages) lang = st.currentLang
         if (lang !in st.languages) lang = st.languages.first()
@@ -220,12 +234,18 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
         rebuildLayout()
     }
 
+    private fun blurActive(st: KbSettings): Boolean {
+        if (Build.VERSION.SDK_INT < 31) return false
+        return try {
+            st.windowBlur && getSystemService(WindowManager::class.java).isCrossWindowBlurEnabled && st.themeId != "amoled" && st.glassAlpha < 100
+        } catch (_: Exception) { false }
+    }
+
     private fun applyBlur(st: KbSettings) {
         val w = window?.window ?: return
         if (Build.VERSION.SDK_INT < 31) return
         try {
-            val wm = getSystemService(WindowManager::class.java)
-            val on = st.windowBlur && wm.isCrossWindowBlurEnabled && st.themeId != "amoled" && st.glassAlpha < 100
+            val on = blurActive(st)
             w.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             w.setBackgroundBlurRadius(if (on) (28 * resources.displayMetrics.density).toInt() else 0)
         } catch (_: Exception) {

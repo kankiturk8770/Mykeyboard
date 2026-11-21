@@ -159,6 +159,13 @@ def main():
     shot("01_keyboard_fa")
     t, c = wait_layout("fa")
     check("keyboard shows Persian layout", "ض" in t and "ش" in t, list(t)[:10])
+    # کیبورد زیر نوار ناوبری نرود (اندروید ۱۵ لبه‌به‌لبه)
+    screen_h = int(sh("wm", "size").split()[-1].split("x")[1])
+    pads = [l for l in adb("logcat", "-d", "-v", "raw", "-s", "KbInsets:D").splitlines() if l.startswith("navPad=")]
+    nav = int(pads[-1][7:]) if pads else -1
+    lowest = max(y for (_, y) in c.values())
+    half_row = int(26 * int(sh("wm", "density").split()[-1]) / 160)
+    check("keyboard sits above the navigation bar", nav >= 0 and lowest + half_row <= screen_h - nav, (lowest, half_row, screen_h, nav))
 
     # ۱) تایپ فارسی + فاصله
     type_text("سلام ", t, c)
