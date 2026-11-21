@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">کیبورد کانکی</string>
+    <string name="ime_name">کیبورد کانکی</string>
+    <string name="subtype_fa">فارسی</string>
+    <string name="subtype_en">انگلیسی (آمریکا)</string>
+</resources>

@@ -1,0 +1,12 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- یک کلید شیشه‌ای با لبه‌ی نئونی و حرف K -->
+    <path android:pathData="M34,36h40a8,8 0,0 1,8 8v20a8,8 0,0 1,-8 8h-40a8,8 0,0 1,-8 -8v-20a8,8 0,0 1,8 -8z"
+        android:fillColor="#26FFFFFF" android:strokeWidth="2.5">
+        <aapt:attr name="android:strokeColor">
+            <gradient android:type="linear" android:startX="26" android:startY="36" android:endX="82" android:endY="72"
+                android:startColor="#FFFF2BD6" android:endColor="#FF00E5FF"/>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M46,44h5v8.5l8.5,-8.5h6.5l-10,10 10.5,10h-6.7l-8.8,-8.6v8.6h-5z" android:fillColor="#FFF4F7FF"/>
+</vector>

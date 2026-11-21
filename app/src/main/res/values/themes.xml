@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Kanki" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF070A14</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#FF070A14</item>
+    </style>
+</resources>
