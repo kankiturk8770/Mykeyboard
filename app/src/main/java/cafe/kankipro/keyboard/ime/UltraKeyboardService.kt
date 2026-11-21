@@ -797,6 +797,7 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
     // ---------------------------------------------------------------- پنل‌ها
     private fun openPanel(p: Panel) {
         finishComposing()
+        if (p == Panel.CLIPBOARD) captureClip()
         lastReplaced = null
         panelState.value = p
         panelView?.visibility = View.VISIBLE
@@ -867,13 +868,19 @@ class UltraKeyboardService : InputMethodService(), LifecycleOwner, SavedStateReg
     }
 
     // ---------------------------------------------------------------- کلیپ‌بورد
-    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener {
-        if (!s.clipHistory) return@OnPrimaryClipChangedListener
-        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return@OnPrimaryClipChangedListener
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+
+    /**
+     * کلیپ فعلی سیستم به تاریخچه (تکراری فقط بالا می‌آید). هم با خبر سیستم، هم وقتی کیبورد یا پنل کلیپ‌بورد باز می‌شود،
+     * چون بعضی گوشی‌ها خبر تغییر کلیپ‌بورد را به کیبورد نمی‌دهند.
+     */
+    private fun captureClip() {
+        if (!s.clipHistory) return
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
         try {
-            val clip = cm.primaryClip ?: return@OnPrimaryClipChangedListener
-            if (clip.itemCount == 0) return@OnPrimaryClipChangedListener
-            val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return@OnPrimaryClipChangedListener
+            val clip = cm.primaryClip ?: return
+            if (clip.itemCount == 0) return
+            val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return
             val flagged = clip.description?.extras?.getBoolean(EXTRA_SENSITIVE) == true ||
                 (Build.VERSION.SDK_INT >= 33 && clip.description?.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true)
             // کپی از فیلد رمز همین الان: همیشه حساس

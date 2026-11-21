@@ -251,11 +251,17 @@ def main():
     _, t, c = keys()
     tap(*b[("term", "ctrl")]); tap(*t["a"])
     tap(*b[("term", "ctrl")]); tap(*t["c"], wait=2)
+    # اگر سیستم خبر کپی را نداد، باز کردن پنل کلیپ‌بورد آن را می‌خواند
+    tap(50, b[("term", "ctrl")][1], wait=1.5)
+    b = bar()
+    tap(*b[("icon", "clipboard")], wait=3)
+    shot("04_clipboard_after_copy")
+    root_h = int(sh("wm", "size").split()[-1].split("x")[1])
+    tap(110, root_h - 200, wait=1.5)
     clip = adb("logcat", "-d", "-v", "raw", "-s", "KbClip:D")
     check("copied OTP saved as sensitive", "added len=6 sensitive=true" in clip, clip[-300:])
 
     # ۱۱) پنل‌ها باز و بسته شوند بی خطا
-    tap(40, b[("icon", "terminal")][1])
     b = bar()
     for ic in ("emoji", "fonts", "clipboard"):
         tap(*b[("icon", ic)], wait=3)
